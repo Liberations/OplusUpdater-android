@@ -9,7 +9,7 @@ git clone https://github.com/Houvven/OplusUpdater-Android.git
 cd OplusUpdater-Android/OplusUpdater
 go get golang.org/x/mobile/bind
 gomobile init
-gomobile bind -target=android -androidapi 26 -v ./pkg/updater
+gomobile bind -ldflags="-extldflags=-Wl,-z,max-page-size=0x4000"  -target=android -androidapi 26 -v ./pkg/updater
 cd ..
 ./gradlew assemble
 ```
