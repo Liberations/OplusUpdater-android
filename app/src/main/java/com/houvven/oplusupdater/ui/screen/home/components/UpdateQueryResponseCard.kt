@@ -5,6 +5,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,7 +21,9 @@ import androidx.compose.ui.unit.dp
 import com.houvven.oplusupdater.R
 import com.houvven.oplusupdater.domain.UpdateQueryResponse
 import com.houvven.oplusupdater.utils.StorageUnitUtil
+import com.houvven.oplusupdater.utils.UrlDecryptUtil
 import com.houvven.oplusupdater.utils.toast
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import top.yukonga.miuix.kmp.basic.BasicComponentColors
@@ -33,6 +36,7 @@ import updater.ResponseResult
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.compareTo
 
 @Composable
 fun UpdateQueryResponseCard(
@@ -168,6 +172,32 @@ private fun UpdateQueryResponseCardContent(
 
         components?.forEach { component ->
             val componentPackets = component?.componentPackets ?: return@forEach
+            var decryptedUrl by remember { mutableStateOf<String?>(null) }
+            var isDecrypting by remember { mutableStateOf(false) }
+            var expiresTime by remember { mutableStateOf<String?>(null) }
+            var isEncryptedUrl by remember { mutableStateOf(false) }
+
+            LaunchedEffect(componentPackets.manualUrl) {
+                componentPackets.manualUrl?.let { url ->
+                    println("url to decrypt: $url")
+                    if (url.contains("downloadCheck")) {
+                        isEncryptedUrl = true
+                        isDecrypting = true
+                        runCatching {
+                            UrlDecryptUtil.resolveUrl(url)
+                        }.onSuccess {
+                            decryptedUrl = it
+                        }.onFailure {
+                            decryptedUrl = url // 失败时使用原 URL
+                        }.also {
+                            isDecrypting = false
+                        }
+                    } else {
+                        isEncryptedUrl = false
+                        decryptedUrl = url
+                    }
+                }
+            }
             Card {
                 val size = componentPackets.size?.toLongOrNull()?.let(StorageUnitUtil::formatSize)
 
@@ -176,15 +206,44 @@ private fun UpdateQueryResponseCardContent(
                     summary = component.componentName,
                     rightText = size
                 )
+
+                // 倒计时更新（每秒刷新）
+                LaunchedEffect(decryptedUrl, isEncryptedUrl) {
+                    if (!isEncryptedUrl) return@LaunchedEffect
+                    decryptedUrl?.let { url ->
+                        UrlDecryptUtil.extractExpiresTimestamp(url)?.let { timestamp ->
+                            while (true) {
+                                expiresTime = UrlDecryptUtil.formatRemainingTime(timestamp, context)
+                                delay(1000)
+                                if (timestamp - System.currentTimeMillis() / 1000 <= 0) break
+                            }
+                        }
+                    }
+                }
+
+                val finalUrl = decryptedUrl ?: componentPackets.url
                 componentPackets.manualUrl?.let {
                     SuperArrowWrapper(
                         title = stringResource(R.string.packet_url),
-                        summary = componentPackets.url,
+                        summary = when {
+                            isDecrypting -> context.getString(R.string.url_is_decrypting)
+                            isEncryptedUrl && expiresTime != null -> "$finalUrl\n⏱ ${
+                                context.getString(
+                                    R.string.validity_period
+                                )
+                            }: $expiresTime"
+
+                            else -> finalUrl
+                        },
                         onClick = {
-                            coroutineScope.launch {
-                                clipboard.setClipEntry(ClipData.newPlainText(it, it).toClipEntry())
+                            if (!isDecrypting && !finalUrl.isNullOrEmpty()) {
+                                coroutineScope.launch {
+                                    clipboard.setClipEntry(
+                                        ClipData.newPlainText(finalUrl, finalUrl).toClipEntry()
+                                    )
+                                }
+                                context.toast(R.string.copied)
                             }
-                            context.toast(R.string.copied)
                         }
                     )
                 }

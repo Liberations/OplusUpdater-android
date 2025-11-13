@@ -37,4 +37,7 @@
     <string name="client_auto">client_auto</string>
     <string name="server_auto">server_auto</string>
     <string name="taste">taste</string>
+    <string name="url_expired">Expired</string>
+    <string name="url_is_decrypting">Decrypting…</string>
+    <string name="validity_period">Validity period</string>
 </resources>

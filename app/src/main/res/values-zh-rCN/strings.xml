@@ -35,4 +35,7 @@
     <string name="client_auto">client_auto</string>
     <string name="server_auto">server_auto</string>
     <string name="taste">taste</string>
+    <string name="url_expired">已过期</string>
+    <string name="url_is_decrypting">正在解析…</string>
+    <string name="validity_period">有效期</string>
 </resources>
