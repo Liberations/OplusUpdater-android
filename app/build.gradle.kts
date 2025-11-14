@@ -1,7 +1,6 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
-import org.gradle.kotlin.dsl.create
-import org.gradle.kotlin.dsl.getByName
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -14,12 +13,20 @@ android {
     namespace = "com.houvven.oplusupdater"
     compileSdk = 36
 
+    val keystorePropertiesFile = rootProject.file("local.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+    }
     signingConfigs {
         create("release") {
-            storeFile = file("keystore.jks")
-            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+            storeFile = file(keystoreProperties["keystore.jks"] as String? ?: "keystore.jks")
+            storePassword = keystoreProperties["SIGNING_STORE_PASSWORD"] as String?
+                ?: System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias = keystoreProperties["SIGNING_KEY_ALIAS"] as String?
+                ?: System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword = keystoreProperties["SIGNING_KEY_PASSWORD"] as String?
+                ?: System.getenv("SIGNING_KEY_PASSWORD")
         }
     }
 
@@ -43,6 +50,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -53,7 +61,7 @@ android {
     splits {
         abi {
             isEnable = true
-            isUniversalApk = false
+            isUniversalApk = true
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
