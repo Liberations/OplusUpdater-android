@@ -11,3 +11,4 @@
 local.properties
 /OplusUpdater/updater.aar
 /OplusUpdater/updater-sources.jar
+app/keystore.jks

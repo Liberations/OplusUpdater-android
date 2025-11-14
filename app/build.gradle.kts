@@ -1,4 +1,6 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.getByName
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -12,12 +14,21 @@ android {
     namespace = "com.houvven.oplusupdater"
     compileSdk = 36
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore.jks")
+            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+        }
+    }
+
     defaultConfig {
         applicationId = "com.houvven.oplusupdater"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.0.7"
+        versionCode = 1
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -25,6 +36,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -52,6 +64,8 @@ android {
             this.outputFileName = "${rootProject.name.lowercase()}-${versionName}.${name}.apk"
         }
     }
+
+
 }
 
 kotlin {
