@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "OplusUpdater-andorid"
 include(":app")
+include(":updater")
