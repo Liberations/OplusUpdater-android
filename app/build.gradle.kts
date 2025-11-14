@@ -69,7 +69,7 @@ android {
     applicationVariants.all {
         outputs.all {
             this as BaseVariantOutputImpl
-            this.outputFileName = "${rootProject.name.lowercase()}-${versionName}.${name}.apk"
+            this.outputFileName = "OppoUpdater-${versionName}.${name}.apk"
         }
     }
 
